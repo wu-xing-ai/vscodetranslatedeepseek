@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm list *)",
+      "Bash(rm -rf /home/xin/plu/out)",
+      "Bash(bash /home/xin/plu/build.sh)"
+    ]
+  }
+}

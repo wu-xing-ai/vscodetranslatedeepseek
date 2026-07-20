@@ -1,0 +1,94 @@
+{
+  "name": "python-hover-translator",
+  "displayName": "Python Hover Translator",
+  "description": "Translate Python hover documentation from English to Chinese using DeepSeek API",
+  "version": "0.1.0",
+  "publisher": "plu",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Python Hover Translator",
+      "properties": {
+        "pythonHoverTranslator.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable hover translation"
+        },
+        "pythonHoverTranslator.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DeepSeek API key (get one at https://platform.deepseek.com/api_keys)"
+        },
+        "pythonHoverTranslator.targetLanguage": {
+          "type": "string",
+          "default": "Chinese (Simplified)",
+          "enum": [
+            "Chinese (Simplified)",
+            "Chinese (Traditional)",
+            "Japanese",
+            "Korean"
+          ],
+          "description": "Target language for translation"
+        },
+        "pythonHoverTranslator.cacheSize": {
+          "type": "number",
+          "default": 200,
+          "minimum": 10,
+          "maximum": 2000,
+          "description": "Maximum number of cached translations (LRU eviction)"
+        },
+        "pythonHoverTranslator.model": {
+          "type": "string",
+          "default": "deepseek-chat",
+          "description": "DeepSeek model name (e.g. deepseek-chat, deepseek-reasoner)"
+        },
+        "pythonHoverTranslator.showOriginal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show original English hover content alongside translation"
+        },
+        "pythonHoverTranslator.showExamples": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include Python usage examples in the translated hover"
+        },
+        "pythonHoverTranslator.proxyUrl": {
+          "type": "string",
+          "default": "",
+          "description": "HTTP/HTTPS proxy URL for DeepSeek API (e.g. http://127.0.0.1:7890). Leave empty to use HTTPS_PROXY env var or direct connection."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "pythonHoverTranslator.clearCache",
+        "title": "Python Hover Translator: Clear Translation Cache"
+      },
+      {
+        "command": "pythonHoverTranslator.toggle",
+        "title": "Python Hover Translator: Toggle On/Off"
+      }
+    ]
+  },
+  "main": "./dist/extension.js",
+  "scripts": {
+    "vscode:prepublish": "bash build.sh",
+    "compile": "bash build.sh",
+    "watch": "bash build.sh --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
