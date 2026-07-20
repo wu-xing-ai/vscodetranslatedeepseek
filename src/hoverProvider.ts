@@ -71,7 +71,7 @@ function buildMergedMarkdown(
 }
 
 /**
- * Register a hover provider for Python files that translates
+ * Register a hover provider for all languages that translates
  * hover documentation using the DeepSeek API.
  *
  * Flow:
@@ -86,7 +86,9 @@ export function registerHoverProvider(
   ctx: vscode.ExtensionContext,
   cache: LRUCache<string>
 ): vscode.Disposable {
-  const provider = vscode.languages.registerHoverProvider('python', {
+  // Register for all languages — not just Python.
+  // Documented functions in any language (JS/TS/Go/Rust/Java etc.) get translated.
+  const provider = vscode.languages.registerHoverProvider('*', {
     async provideHover(
       document: vscode.TextDocument,
       position: vscode.Position,

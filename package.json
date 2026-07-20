@@ -10,11 +10,10 @@
   },
   "categories": [
     "Programming Languages",
-    "Machine Learning",
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:python"
+    "onStartupFinished"
   ],
   "contributes": {
     "configuration": {
