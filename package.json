@@ -1,9 +1,10 @@
 {
-  "name": "python-hover-translator",
-  "displayName": "Python Hover Translator",
-  "description": "Translate Python hover documentation from English to Chinese using DeepSeek API",
+  "name": "aitranslate",
+  "displayName": "AI Translate",
+  "description": "AI-powered Python hover documentation translation using DeepSeek API",
   "version": "0.1.0",
-  "publisher": "plu",
+  "publisher": "aitranslate",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -84,11 +85,13 @@
   "scripts": {
     "vscode:prepublish": "bash build.sh",
     "compile": "bash build.sh",
-    "watch": "bash build.sh --watch"
+    "watch": "bash build.sh --watch",
+    "package": "bash package.sh"
   },
   "devDependencies": {
     "@types/node": "^20.x",
     "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.4.0"
   }
 }
