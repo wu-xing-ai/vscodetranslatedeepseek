@@ -1,8 +1,8 @@
 {
   "name": "ai-hover-translate",
-  "displayName": "AI Translate (Hover Docs)",
+  "displayName": "AI Hover Translate",
   "description": "AI-powered hover documentation translation for any language (Python, JS/TS, Go, Rust, Java, C++ ...) using any OpenAI-compatible API",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "aitranslate",
   "license": "MIT",
   "icon": "icon.png",
