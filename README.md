@@ -8,11 +8,7 @@ VSCode 插件，鼠标悬停到任意语言的函数/类/模块上时，自动�
 
 ---
 
-## ⚡ 快速开始（零配置，开箱即用）
-
-> **装完就能用，不用填任何 Key！** 插件内置了免费的智谱 `glm-4-flash` 额度，安装后直接悬停即可翻译。
-
-想换成自己的模型（DeepSeek / OpenAI / 本地 Ollama 等）？
+## ⚡ 快速开始
 
 **按 `Ctrl+Shift+P`（macOS 为 `Cmd+Shift+P`）→ 输入 `AI Translate` → 选择：**
 
@@ -21,6 +17,8 @@ AI Hover Translator: Open Settings
 ```
 
 在可视化面板里：选服务商 → 粘贴 Key → **测试连接** → 保存。
+
+> 💡 没有 Key？选 **智谱 GLM**，`glm-4-flash` 模型**免费**，注册即可获取 Key。
 
 ---
 
@@ -100,14 +98,11 @@ AI Hover Translator: Open Settings
 
 > 🔒 API Key 保存在操作系统密钥库（VS Code SecretStorage），**不会明文写入 `settings.json`，也不会上传到设置同步云端**。
 
-### 关于内置免费额度
+### 没有 Key？推荐免费的智谱 GLM
 
-未配置自己的 Key 时，插件会使用**内置的共享免费额度**（智谱 `glm-4-flash`）：
-
-- ✅ 开箱即用，装完直接悬停就能翻译，无需任何配置
-- ⚠️ 为保护共享额度，内置额度**仅限免费的 `glm-4-flash` 模型**（忽略自定义 URL/模型）
-- 🔒 内置 Key 只写在插件代码里，**永不写入 `settings.json`**，因此不会被同步到你的云端账号
-- 💡 想要更强的模型（DeepSeek / GPT / 本地模型）或更高频使用，请配置**自己的 Key**
+- 在面板里点 **智谱 GLM（免费）** → 点「获取 Key」链接去注册（免费）
+- 模型保持 `glm-4-flash`，粘贴 Key → 测试连接 → 保存
+- 也可用 DeepSeek / OpenAI / 本地 Ollama 等任意 OpenAI 兼容服务
 
 ## 配置（手动 / settings.json）
 
@@ -115,11 +110,9 @@ AI Hover Translator: Open Settings
 
 ### 可选：API Key 与 API URL
 
-> 不配置也可用（走内置免费额度）。以下为使用自己账号时的配置。
-
 | 配置项 | 默认值 | 说明 |
 |---|---|---|
-| `pythonHoverTranslator.apiKey` | (空) | 你的 API Key（留空则用内置免费额度） |
+| `pythonHoverTranslator.apiKey` | (空) | 你的 API Key |
 | `pythonHoverTranslator.apiUrl` | `https://api.deepseek.com/v1/chat/completions` | API 地址（OpenAI 兼容） |
 | `pythonHoverTranslator.model` | `deepseek-chat` | 模型名 |
 

@@ -92,13 +92,12 @@ async function activate(context) {
             console.log(`[Python Hover Translator] Cache capacity updated to ${newSize}`);
         }
     }));
-    // First-run notice: tell the user they are using the shared free key and
-    // how to configure their own provider.
+    // First-run guidance: if no API key is configured, offer to open settings.
     const alreadyPrompted = context.globalState.get('hasPromptedForSetup');
-    if ((0, secrets_1.isUsingBuiltinKey)() && !alreadyPrompted) {
+    if (!config.apiKey && !alreadyPrompted) {
         await context.globalState.update('hasPromptedForSetup', true);
-        const action = await vscode.window.showInformationMessage('AI Translate 已启用：正在使用内置免费额度（智谱 glm-4-flash），无需配置即可翻译。', '配置自己的 Key');
-        if (action === '配置自己的 Key') {
+        const action = await vscode.window.showInformationMessage('AI Translate: 还没有配置 API Key。智谱 GLM 的 glm-4-flash 模型免费，现在去设置？', '打开设置');
+        if (action === '打开设置') {
             settingsPanel_1.SettingsPanel.createOrShow(context.extensionUri);
         }
     }

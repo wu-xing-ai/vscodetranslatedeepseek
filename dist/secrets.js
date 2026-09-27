@@ -33,14 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getApiKey = void 0;
 exports.initSecrets = initSecrets;
 exports.getUserApiKey = getUserApiKey;
-exports.getApiKey = getApiKey;
-exports.isUsingBuiltinKey = isUsingBuiltinKey;
 exports.saveApiKey = saveApiKey;
 exports.clearApiKey = clearApiKey;
 const vscode = __importStar(require("vscode"));
-const builtin_1 = require("./builtin");
 const SECRET_KEY = 'pythonHoverTranslator.apiKey';
 const CONFIG_SECTION = 'pythonHoverTranslator';
 let cachedApiKey = '';
@@ -61,7 +59,7 @@ async function initSecrets(context) {
     }
 }
 /**
- * Return the user's own API key, or an empty string if none is configured.
+ * Return the API key.
  * Prefers the securely stored secret; falls back to the legacy plain-text
  * `pythonHoverTranslator.apiKey` setting for backward compatibility.
  */
@@ -73,20 +71,8 @@ function getUserApiKey() {
         .getConfiguration(CONFIG_SECTION)
         .get('apiKey', '');
 }
-/**
- * Return the key actually used for requests.
- * Falls back to the built-in shared free key when the user has none, so the
- * extension works out-of-the-box without any configuration.
- */
-function getApiKey() {
-    const userKey = getUserApiKey();
-    return userKey && userKey.trim().length > 0 ? userKey : builtin_1.BUILTIN_API_KEY;
-}
-/** True when no user key is configured and the shared built-in key is used. */
-function isUsingBuiltinKey() {
-    const userKey = getUserApiKey();
-    return !(userKey && userKey.trim().length > 0);
-}
+/** Alias kept for callers that just want the effective key. */
+exports.getApiKey = getUserApiKey;
 /** Persist the API key to secure storage (and mirror to memory). */
 async function saveApiKey(key) {
     cachedApiKey = key;
