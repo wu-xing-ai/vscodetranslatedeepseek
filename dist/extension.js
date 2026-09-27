@@ -39,6 +39,8 @@ const vscode = __importStar(require("vscode"));
 const hoverProvider_1 = require("./hoverProvider");
 const cache_1 = require("./cache");
 const config_1 = require("./config");
+const secrets_1 = require("./secrets");
+const settingsPanel_1 = require("./settingsPanel");
 let cache;
 /**
  * Activate the extension.
@@ -47,14 +49,21 @@ let cache;
  * Initialises the LRU cache, registers the hover provider, and
  * sets up commands and configuration listeners.
  */
-function activate(context) {
+async function activate(context) {
     console.log('[Python Hover Translator] Activating...');
+    // Load the API key from secure storage before anything else,
+    // so the synchronous hover path can read it.
+    await (0, secrets_1.initSecrets)(context);
     // Initialise the translation cache
     const config = (0, config_1.getConfig)();
     cache = new cache_1.LRUCache(config.cacheSize);
     // Register the hover provider (core functionality)
     (0, hoverProvider_1.registerHoverProvider)(context, cache);
     // --- Commands ---
+    // Open the visual settings panel
+    context.subscriptions.push(vscode.commands.registerCommand('pythonHoverTranslator.openSettings', () => {
+        settingsPanel_1.SettingsPanel.createOrShow(context.extensionUri);
+    }));
     // Clear the translation cache
     context.subscriptions.push(vscode.commands.registerCommand('pythonHoverTranslator.clearCache', () => {
         if (cache) {
@@ -83,6 +92,15 @@ function activate(context) {
             console.log(`[Python Hover Translator] Cache capacity updated to ${newSize}`);
         }
     }));
+    // First-run guidance: if no API key is configured, offer to open settings.
+    const alreadyPrompted = context.globalState.get('hasPromptedForSetup');
+    if (!config.apiKey && !alreadyPrompted) {
+        await context.globalState.update('hasPromptedForSetup', true);
+        const action = await vscode.window.showInformationMessage('AI Translate: 还没有配置 API Key，现在设置？', '打开设置');
+        if (action === '打开设置') {
+            settingsPanel_1.SettingsPanel.createOrShow(context.extensionUri);
+        }
+    }
     console.log('[Python Hover Translator] Activated successfully.');
 }
 /**

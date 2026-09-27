@@ -25,6 +25,12 @@ if [ -z "$NODE" ]; then
     exit 1
 fi
 
+# .npmrc may set a Windows-only `script-shell` (bash.exe). When running
+# under WSL/Linux that path does not exist, so override it for this run.
+if grep -qi 'script-shell.*bash\.exe' "$PROJECT_DIR/.npmrc" 2>/dev/null; then
+    export NPM_CONFIG_SCRIPT_SHELL=/bin/bash
+fi
+
 echo "Building first..."
 bash "$PROJECT_DIR/build.sh"
 

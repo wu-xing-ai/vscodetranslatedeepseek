@@ -33,37 +33,56 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getConfig = getConfig;
-exports.isEnabled = isEnabled;
-exports.hasApiKey = hasApiKey;
+exports.initSecrets = initSecrets;
+exports.getApiKey = getApiKey;
+exports.saveApiKey = saveApiKey;
+exports.clearApiKey = clearApiKey;
 const vscode = __importStar(require("vscode"));
-const secrets_1 = require("./secrets");
+const SECRET_KEY = 'pythonHoverTranslator.apiKey';
 const CONFIG_SECTION = 'pythonHoverTranslator';
-/** Read all configuration values at once. */
-function getConfig() {
-    const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
-    return {
-        enabled: cfg.get('enabled', true),
-        apiKey: (0, secrets_1.getApiKey)(),
-        apiUrl: cfg.get('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
-        targetLanguage: cfg.get('targetLanguage', 'Chinese (Simplified)'),
-        cacheSize: cfg.get('cacheSize', 200),
-        model: cfg.get('model', 'deepseek-chat'),
-        maxTokens: cfg.get('maxTokens', 1024),
-        showOriginal: cfg.get('showOriginal', true),
-        showExamples: cfg.get('showExamples', true),
-        proxyUrl: cfg.get('proxyUrl', ''),
-    };
+let cachedApiKey = '';
+let contextRef;
+/**
+ * Load the API key from secure storage into memory.
+ * Must be awaited during activation so that the synchronous hover path
+ * (`hasApiKey()` / `getConfig()`) can read it without awaiting.
+ */
+async function initSecrets(context) {
+    contextRef = context;
+    try {
+        cachedApiKey = (await context.secrets.get(SECRET_KEY)) || '';
+    }
+    catch (err) {
+        console.warn('[Python Hover Translator] Failed to read secret storage:', err);
+        cachedApiKey = '';
+    }
 }
-/** Quick check called on every hover before doing any work. */
-function isEnabled() {
+/**
+ * Return the API key.
+ * Prefers the securely stored secret; falls back to the legacy plain-text
+ * `pythonHoverTranslator.apiKey` setting for backward compatibility.
+ */
+function getApiKey() {
+    if (cachedApiKey && cachedApiKey.trim().length > 0) {
+        return cachedApiKey;
+    }
     return vscode.workspace
         .getConfiguration(CONFIG_SECTION)
-        .get('enabled', true);
+        .get('apiKey', '');
 }
-/** Check if user has configured an API key. */
-function hasApiKey() {
-    const key = (0, secrets_1.getApiKey)();
-    return !!key && key.trim().length > 0;
+/** Persist the API key to secure storage (and mirror to memory). */
+async function saveApiKey(key) {
+    cachedApiKey = key;
+    if (!contextRef) {
+        throw new Error('Secret storage not initialised');
+    }
+    await contextRef.secrets.store(SECRET_KEY, key);
 }
-//# sourceMappingURL=config.js.map
+/** Remove the API key from secure storage. */
+async function clearApiKey() {
+    cachedApiKey = '';
+    if (contextRef) {
+        await contextRef.secrets.delete(SECRET_KEY);
+    }
+}
+//# sourceMappingURL=secrets.js.map

@@ -65,9 +65,28 @@ bash build.sh
 # 4. 在 VSCode 中打开该文件夹，按 F5 启动调试
 ```
 
-## 配置
+## 快速开始（可视化配置，推荐）
 
-安装后在 VSCode 设置中搜索 `Python Hover Translator`（设置项前缀保持兼容），需要配置以下两项：
+安装后按 `Ctrl+Shift+P`（macOS 为 `Cmd+Shift+P`）输入 **AI Translate**，选择：
+
+```
+AI Hover Translator: Open Settings
+```
+
+打开可视化面板，一键完成配置：
+
+1. **选择服务商** — DeepSeek / 智谱 GLM（免费）/ OpenAI / OpenRouter / Ollama / 自定义，点一下自动填好地址和模型
+2. **粘贴 API Key** — 点「显示」可查看，点「清除」可删除
+3. **点「测试连接」** — 立即验证 Key、地址、模型是否正确，不用等悬停
+4. **点「保存设置」** — 完成
+
+> API Key 保存在操作系统密钥库（VS Code SecretStorage），不会明文写在 `settings.json` 里。
+
+首次安装且未配置 Key 时，插件会弹窗提示一键打开该面板。
+
+## 配置（手动 / settings.json）
+
+如果偏好手动编辑 `settings.json`，配置项前缀为 `pythonHoverTranslator`：
 
 ### 必填：API Key 与 API URL
 
@@ -170,6 +189,7 @@ WSL 用户注意：WSL2 中代理地址是宿主机 IP，例如 `http://172.27.2
 
 | 命令 | 说明 |
 |---|---|
+| `AI Hover Translator: Open Settings` | 打开可视化设置面板 |
 | `AI Hover Translator: Clear Translation Cache` | 清空翻译缓存 |
 | `AI Hover Translator: Toggle On/Off` | 开关翻译 |
 

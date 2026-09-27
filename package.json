@@ -2,7 +2,7 @@
   "name": "aitranslate",
   "displayName": "AI Translate - Hover Docs",
   "description": "AI-powered hover documentation translation for any language (Python, JS/TS, Go, Rust, Java, C++ ...) using any OpenAI-compatible API",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "aitranslate",
   "license": "MIT",
   "icon": "icon.png",
@@ -36,7 +36,7 @@
         "pythonHoverTranslator.apiKey": {
           "type": "string",
           "default": "",
-          "description": "API key for the translation service (DeepSeek, OpenAI, or any OpenAI-compatible provider)"
+          "description": "(Legacy) API key. Prefer the visual settings panel — the key is stored securely in the OS keychain instead. This plain-text setting is only used as a fallback."
         },
         "pythonHoverTranslator.apiUrl": {
           "type": "string",
@@ -92,12 +92,19 @@
     },
     "commands": [
       {
+        "command": "pythonHoverTranslator.openSettings",
+        "title": "AI Hover Translator: Open Settings",
+        "category": "AI Translate"
+      },
+      {
         "command": "pythonHoverTranslator.clearCache",
-        "title": "AI Hover Translator: Clear Translation Cache"
+        "title": "AI Hover Translator: Clear Translation Cache",
+        "category": "AI Translate"
       },
       {
         "command": "pythonHoverTranslator.toggle",
-        "title": "AI Hover Translator: Toggle On/Off"
+        "title": "AI Hover Translator: Toggle On/Off",
+        "category": "AI Translate"
       }
     ]
   },

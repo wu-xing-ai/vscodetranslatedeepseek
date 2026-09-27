@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { getApiKey } from './secrets';
 
 const CONFIG_SECTION = 'pythonHoverTranslator';
 
@@ -21,7 +22,7 @@ export function getConfig(): ExtensionConfig {
   const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
   return {
     enabled: cfg.get<boolean>('enabled', true),
-    apiKey: cfg.get<string>('apiKey', ''),
+    apiKey: getApiKey(),
     apiUrl: cfg.get<string>('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
     targetLanguage: cfg.get<string>('targetLanguage', 'Chinese (Simplified)'),
     cacheSize: cfg.get<number>('cacheSize', 200),
@@ -42,8 +43,6 @@ export function isEnabled(): boolean {
 
 /** Check if user has configured an API key. */
 export function hasApiKey(): boolean {
-  const key = vscode.workspace
-    .getConfiguration(CONFIG_SECTION)
-    .get<string>('apiKey', '');
+  const key = getApiKey();
   return !!key && key.trim().length > 0;
 }

@@ -105,6 +105,36 @@ class DeepSeekClient {
         const input = (0, utils_1.estimatedTokens)(clean) > 2000 ? (0, utils_1.truncateText)(clean, 2000) : clean;
         return this.callAPI(input, targetLanguage);
     }
+    /**
+     * Lightweight connectivity test used by the settings webview.
+     * Sends a tiny request and returns the model's short reply on success.
+     * Does not touch the translation cache or rate limiter.
+     */
+    async testConnection(opts) {
+        if (!opts.apiKey || !opts.apiKey.trim()) {
+            throw new Error('API key is empty.');
+        }
+        const endpoint = parseEndpoint(opts.apiUrl || DEFAULT_API_URL);
+        const proxyUrl = opts.proxyUrl
+            || process.env.HTTPS_PROXY
+            || process.env.https_proxy
+            || process.env.HTTP_PROXY
+            || process.env.http_proxy
+            || '';
+        const body = JSON.stringify({
+            model: opts.model,
+            messages: [
+                { role: 'user', content: 'Reply with exactly: OK' },
+            ],
+            temperature: 0,
+            max_tokens: Math.min(opts.maxTokens || 16, 16),
+            stream: false,
+        });
+        if (proxyUrl) {
+            return this.requestViaProxy(proxyUrl, endpoint, body, opts.apiKey);
+        }
+        return this.requestDirect(endpoint, body, opts.apiKey);
+    }
     async callAPI(text, targetLanguage) {
         const config = (0, config_1.getConfig)();
         if (!config.apiKey) {

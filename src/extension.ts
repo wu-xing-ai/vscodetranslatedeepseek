@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { registerHoverProvider } from './hoverProvider';
 import { LRUCache } from './cache';
 import { getConfig } from './config';
+import { initSecrets } from './secrets';
+import { SettingsPanel } from './settingsPanel';
 
 let cache: LRUCache<string> | undefined;
 
@@ -12,8 +14,12 @@ let cache: LRUCache<string> | undefined;
  * Initialises the LRU cache, registers the hover provider, and
  * sets up commands and configuration listeners.
  */
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   console.log('[Python Hover Translator] Activating...');
+
+  // Load the API key from secure storage before anything else,
+  // so the synchronous hover path can read it.
+  await initSecrets(context);
 
   // Initialise the translation cache
   const config = getConfig();
@@ -23,6 +29,13 @@ export function activate(context: vscode.ExtensionContext) {
   registerHoverProvider(context, cache);
 
   // --- Commands ---
+
+  // Open the visual settings panel
+  context.subscriptions.push(
+    vscode.commands.registerCommand('pythonHoverTranslator.openSettings', () => {
+      SettingsPanel.createOrShow(context.extensionUri);
+    })
+  );
 
   // Clear the translation cache
   context.subscriptions.push(
@@ -69,6 +82,19 @@ export function activate(context: vscode.ExtensionContext) {
       }
     })
   );
+
+  // First-run guidance: if no API key is configured, offer to open settings.
+  const alreadyPrompted = context.globalState.get<boolean>('hasPromptedForSetup');
+  if (!config.apiKey && !alreadyPrompted) {
+    await context.globalState.update('hasPromptedForSetup', true);
+    const action = await vscode.window.showInformationMessage(
+      'AI Translate: 还没有配置 API Key，现在设置？',
+      '打开设置'
+    );
+    if (action === '打开设置') {
+      SettingsPanel.createOrShow(context.extensionUri);
+    }
+  }
 
   console.log('[Python Hover Translator] Activated successfully.');
 }
