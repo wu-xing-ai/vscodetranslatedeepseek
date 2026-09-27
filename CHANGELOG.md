@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- 修复「测试连接」对推理模型（如 `deepseek-flash`）误报失败的问题：
+  推理模型会先消耗 token 进行思考，之前 16 token 的测试预算不够导致返回空内容。
+- 改进错误提示：当模型只返回 reasoning_content 而无正文时，提示需增大 `maxTokens`。
+- 更新 DeepSeek 预设模型为 `deepseek-flash`。
+
 ## 0.3.0
 
 - **可视化设置面板**：新增 `AI Hover Translator: Open Settings` 命令，

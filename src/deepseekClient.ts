@@ -15,7 +15,7 @@ interface ApiEndpoint {
 
 interface ChatResponse {
   choices: Array<{
-    message: { content: string };
+    message: { content: string; reasoning_content?: string };
     finish_reason: string;
   }>;
   usage?: {
@@ -130,7 +130,10 @@ export class DeepSeekClient {
         { role: 'user', content: 'Reply with exactly: OK' },
       ],
       temperature: 0,
-      max_tokens: Math.min(opts.maxTokens || 16, 16),
+      // Reasoning models (e.g. deepseek-flash) spend tokens on hidden
+      // "reasoning" before emitting any content, so a tiny budget can
+      // produce an empty reply. 64 leaves room for both.
+      max_tokens: Math.max(Math.min(opts.maxTokens || 64, 64), 64),
       stream: false,
     });
 
@@ -464,11 +467,25 @@ export class DeepSeekClient {
         return;
       }
 
-      const content = data.choices?.[0]?.message?.content;
+      const choice = data.choices?.[0];
+      const content = choice?.message?.content;
+      const reasoning = choice?.message?.reasoning_content;
+
       if (!content) {
         // Surface API-level errors (e.g. invalid key/model) when present
         const apiError = (data as unknown as { error?: { message?: string } }).error;
-        reject(new Error(apiError?.message || 'API returned empty response body'));
+        if (apiError?.message) {
+          reject(new Error(apiError.message));
+          return;
+        }
+        // Reasoning model used up the budget on hidden reasoning but returned
+        // no visible content. The connection itself succeeded; fall back to the
+        // reasoning text so the caller gets *something* useful.
+        if (reasoning && reasoning.trim()) {
+          reject(new Error('API returned only reasoning content (increase maxTokens)'));
+          return;
+        }
+        reject(new Error('API returned empty response body'));
         return;
       }
 

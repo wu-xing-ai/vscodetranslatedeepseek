@@ -20,9 +20,10 @@ const PRESETS: Preset[] = [
     id: 'deepseek',
     name: 'DeepSeek',
     apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-    model: 'deepseek-chat',
+    model: 'deepseek-flash',
     maxTokens: 2048,
     keyUrl: 'https://platform.deepseek.com/api_keys',
+    note: '可用模型：deepseek-flash、deepseek-v4-pro',
   },
   {
     id: 'zhipu',
