@@ -44,9 +44,11 @@ function getConfig() {
     return {
         enabled: cfg.get('enabled', true),
         apiKey: cfg.get('apiKey', ''),
+        apiUrl: cfg.get('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
         targetLanguage: cfg.get('targetLanguage', 'Chinese (Simplified)'),
         cacheSize: cfg.get('cacheSize', 200),
         model: cfg.get('model', 'deepseek-chat'),
+        maxTokens: cfg.get('maxTokens', 1024),
         showOriginal: cfg.get('showOriginal', true),
         showExamples: cfg.get('showExamples', true),
         proxyUrl: cfg.get('proxyUrl', ''),

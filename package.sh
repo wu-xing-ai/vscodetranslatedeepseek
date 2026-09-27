@@ -29,13 +29,16 @@ echo "Building first..."
 bash "$PROJECT_DIR/build.sh"
 
 echo "Packaging..."
-VSCE="$PROJECT_DIR/node_modules/@vscode/vsce/out/vsce.js"
+VSCE="$PROJECT_DIR/node_modules/@vscode/vsce/vsce"
+if [ ! -f "$VSCE" ]; then
+    VSCE="$PROJECT_DIR/node_modules/.bin/vsce"
+fi
 if [ ! -f "$VSCE" ]; then
     echo "ERROR: @vscode/vsce not installed. Run: npm install"
     exit 1
 fi
 
-"$NODE" "$VSCE" package --cwd "$PROJECT_DIR"
+"$NODE" "$VSCE" package "$@"
 
 echo ""
 echo "Done! .vsix file in: $PROJECT_DIR"

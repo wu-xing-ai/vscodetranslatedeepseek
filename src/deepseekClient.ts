@@ -3,10 +3,17 @@ import * as net from 'net';
 import { getConfig } from './config';
 import { containsCJK, truncateText, estimatedTokens } from './utils';
 
-const DEEPSEEK_HOST = 'api.deepseek.com';
-const DEEPSEEK_PATH = '/v1/chat/completions';
+const DEFAULT_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
-interface DeepSeekResponse {
+/** Parsed API endpoint. */
+interface ApiEndpoint {
+  protocol: 'https:' | 'http:';
+  host: string;
+  port: number;
+  path: string; // pathname + search
+}
+
+interface ChatResponse {
   choices: Array<{
     message: { content: string };
     finish_reason: string;
@@ -19,9 +26,50 @@ interface DeepSeekResponse {
 }
 
 /**
- * Singleton client for the DeepSeek API.
+ * Parse and validate a user-configured API URL into connection details.
+ */
+function parseEndpoint(rawUrl: string): ApiEndpoint {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid API URL: ${rawUrl}`);
+  }
+
+  const protocol = url.protocol as ApiEndpoint['protocol'];
+  if (protocol !== 'https:' && protocol !== 'http:') {
+    throw new Error(`Unsupported protocol "${url.protocol}" — use http or https`);
+  }
+
+  const port = url.port
+    ? parseInt(url.port, 10)
+    : (protocol === 'https:' ? 443 : 80);
+
+  // If the user only gave a base URL (no explicit endpoint), append the
+  // standard OpenAI-compatible path. This makes configs like
+  // "https://open.bigmodel.cn/api/paas/v4" or "http://localhost:11434/v1"
+  // work without having to type the full "/chat/completions" suffix.
+  let path = url.pathname + url.search;
+  if (!/\/chat\/completions\/?$/.test(url.pathname)) {
+    path = path.replace(/\/+$/, '') + '/chat/completions';
+  }
+
+  return {
+    protocol,
+    host: url.hostname,
+    port,
+    path,
+  };
+}
+
+/**
+ * Singleton client for OpenAI-compatible chat completion APIs.
  *
- * Uses raw tls.connect() to bypass VSCode's @vscode/proxy-agent.
+ * The endpoint, model and API key are all read from user configuration,
+ * so the extension works with DeepSeek, OpenAI, Ollama, LM Studio,
+ * OpenRouter, or any other OpenAI-compatible provider.
+ *
+ * Uses a raw socket (tls/net) to bypass VSCode's @vscode/proxy-agent.
  * Supports optional HTTP CONNECT proxy tunneling for users behind firewalls.
  */
 export class DeepSeekClient {
@@ -55,8 +103,10 @@ export class DeepSeekClient {
     const config = getConfig();
 
     if (!config.apiKey) {
-      throw new Error('DeepSeek API key not configured.');
+      throw new Error('API key not configured.');
     }
+
+    const endpoint = parseEndpoint(config.apiUrl || DEFAULT_API_URL);
 
     // Resolve proxy: config setting takes priority, then env vars
     const proxyUrl = config.proxyUrl
@@ -72,7 +122,8 @@ export class DeepSeekClient {
 
     const systemPrompt = [
       'You are a professional technical documentation translator.',
-      `Translate the user's Python documentation from English into ${targetLanguage}.`,
+      `Translate the user's programming documentation from English into ${targetLanguage}.`,
+      'The documentation may describe code in any programming language (Python, JavaScript, TypeScript, Go, Rust, Java, C#, C++, etc.).',
       '',
       isChinese
         ? '关键规则（必须遵守）：'
@@ -85,7 +136,7 @@ export class DeepSeekClient {
     ].join('\n');
 
     const userPrompt = config.showExamples
-      ? `${text}\n\n翻译完成后，请在底部用围栏代码块额外提供 1-2 个简洁的 Python 使用示例。`
+      ? `${text}\n\n翻译完成后，请在底部用围栏代码块额外提供 1-2 个简洁的使用示例（使用与该文档相同的编程语言）。`
       : text;
 
     const requestBody = JSON.stringify({
@@ -95,28 +146,32 @@ export class DeepSeekClient {
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens: 2048,
+      max_tokens: config.maxTokens,
       stream: false,
     });
 
     console.log(
-      '[Python Hover Translator] Connecting to', DEEPSEEK_HOST,
-      useProxy ? `via proxy ${proxyUrl}` : '(direct TLS)'
+      '[Python Hover Translator] Connecting to',
+      `${endpoint.protocol}//${endpoint.host}:${endpoint.port}${endpoint.path}`,
+      useProxy ? `via proxy ${proxyUrl}` : '(direct)'
     );
 
     if (useProxy) {
-      return this.requestViaProxy(proxyUrl, requestBody, config.apiKey);
+      return this.requestViaProxy(proxyUrl, endpoint, requestBody, config.apiKey);
     }
-    return this.requestDirect(requestBody, config.apiKey);
+    return this.requestDirect(endpoint, requestBody, config.apiKey);
   }
 
-  /**
-   * Direct TLS connection (no proxy).
-   */
-  private requestDirect(body: string, apiKey: string): Promise<string> {
-    const httpRequest = [
-      `POST ${DEEPSEEK_PATH} HTTP/1.1`,
-      `Host: ${DEEPSEEK_HOST}`,
+  /** Build the raw HTTP request headers string. */
+  private buildRequestHead(endpoint: ApiEndpoint, body: string, apiKey: string): string {
+    const defaultPort = endpoint.protocol === 'https:' ? 443 : 80;
+    const hostHeader = endpoint.port === defaultPort
+      ? endpoint.host
+      : `${endpoint.host}:${endpoint.port}`;
+
+    return [
+      `POST ${endpoint.path} HTTP/1.1`,
+      `Host: ${hostHeader}`,
       `Content-Type: application/json`,
       `Authorization: Bearer ${apiKey}`,
       `Content-Length: ${Buffer.byteLength(body)}`,
@@ -124,54 +179,84 @@ export class DeepSeekClient {
       '',
       '',
     ].join('\r\n');
+  }
 
+  /** Open a plain TCP or TLS socket depending on the endpoint protocol. */
+  private connectSocket(
+    endpoint: ApiEndpoint,
+    onConnect: (socket: net.Socket) => void,
+    onError: (err: Error) => void,
+    onTimeout: () => void
+  ): net.Socket {
+    if (endpoint.protocol === 'http:') {
+      const sock = net.connect(
+        { host: endpoint.host, port: endpoint.port, timeout: 15_000 },
+        () => onConnect(sock)
+      );
+      sock.on('error', onError);
+      sock.on('timeout', onTimeout);
+      return sock;
+    }
+
+    const sock = tls.connect(
+      {
+        host: endpoint.host,
+        port: endpoint.port,
+        servername: endpoint.host,
+        rejectUnauthorized: false,
+        timeout: 15_000,
+      },
+      () => onConnect(sock)
+    );
+    sock.on('error', onError);
+    sock.on('timeout', onTimeout);
+    return sock;
+  }
+
+  /** Direct connection (no proxy). */
+  private requestDirect(
+    endpoint: ApiEndpoint,
+    body: string,
+    apiKey: string
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       let settled = false;
 
-      const sock = tls.connect(
-        {
-          host: DEEPSEEK_HOST,
-          port: 443,
-          servername: DEEPSEEK_HOST,
-          rejectUnauthorized: false,
-          timeout: 15_000,
+      const socket = this.connectSocket(
+        endpoint,
+        (sock) => {
+          sock.write(this.buildRequestHead(endpoint, body, apiKey));
+          sock.write(body);
+        },
+        (err) => {
+          if (settled) { return; }
+          settled = true;
+          reject(err);
         },
         () => {
-          sock.write(httpRequest);
-          sock.write(body);
+          if (settled) { return; }
+          settled = true;
+          socket.destroy();
+          reject(new Error('Connection timed out'));
         }
       );
 
       const chunks: Buffer[] = [];
-      sock.on('data', (chunk: Buffer) => chunks.push(chunk));
+      socket.on('data', (chunk: Buffer) => chunks.push(chunk));
 
-      sock.on('end', () => {
+      socket.on('end', () => {
         if (settled) { return; }
         settled = true;
         const raw = Buffer.concat(chunks).toString();
         this.processResponse(raw, resolve, reject);
       });
-
-      sock.on('error', (err: Error) => {
-        if (settled) { return; }
-        settled = true;
-        reject(err);
-      });
-
-      sock.on('timeout', () => {
-        if (settled) { return; }
-        settled = true;
-        sock.destroy();
-        reject(new Error('TLS connection timed out'));
-      });
     });
   }
 
-  /**
-   * HTTP CONNECT proxy tunnel → TLS over the tunnel.
-   */
+  /** HTTP CONNECT proxy tunnel → TLS/TCP over the tunnel. */
   private requestViaProxy(
     proxyUrl: string,
+    endpoint: ApiEndpoint,
     body: string,
     apiKey: string
   ): Promise<string> {
@@ -183,11 +268,14 @@ export class DeepSeekClient {
       try {
         const u = new URL(proxyUrl);
         proxyHost = u.hostname;
-        proxyPort = parseInt(u.port || '7890');
+        proxyPort = parseInt(u.port || '7890', 10);
       } catch {
         reject(new Error('Invalid proxy URL: ' + proxyUrl));
         return;
       }
+
+      const targetPort = endpoint.port;
+      const targetHost = endpoint.host;
 
       // Step 1: connect to proxy
       const proxySocket = net.connect(
@@ -195,8 +283,8 @@ export class DeepSeekClient {
         () => {
           // Step 2: send CONNECT to establish tunnel
           proxySocket.write(
-            `CONNECT ${DEEPSEEK_HOST}:443 HTTP/1.1\r\n` +
-            `Host: ${DEEPSEEK_HOST}:443\r\n` +
+            `CONNECT ${targetHost}:${targetPort} HTTP/1.1\r\n` +
+            `Host: ${targetHost}:${targetPort}\r\n` +
             `Proxy-Connection: Keep-Alive\r\n\r\n`
           );
         }
@@ -208,68 +296,48 @@ export class DeepSeekClient {
         connectResponse += chunk.toString();
 
         // Check if we got the full CONNECT response (ends with \r\n\r\n)
-        if (connectResponse.includes('\r\n\r\n')) {
-          const statusLine = connectResponse.split('\r\n')[0];
-          if (!statusLine.includes('200')) {
-            proxySocket.destroy();
-            if (!settled) {
-              settled = true;
-              reject(new Error(`Proxy rejected CONNECT: ${statusLine}`));
-            }
-            return;
-          }
-
-          // Step 3: upgrade to TLS over the proxy tunnel
-          proxySocket.removeAllListeners('data');
-
-          const tlsSocket = tls.connect(
-            {
-              socket: proxySocket,
-              servername: DEEPSEEK_HOST,
-              rejectUnauthorized: false,
-              timeout: 15_000,
-            },
-            () => {
-              // Step 4: send the actual HTTPS request
-              const httpRequest = [
-                `POST ${DEEPSEEK_PATH} HTTP/1.1`,
-                `Host: ${DEEPSEEK_HOST}`,
-                `Content-Type: application/json`,
-                `Authorization: Bearer ${apiKey}`,
-                `Content-Length: ${Buffer.byteLength(body)}`,
-                `Connection: close`,
-                '',
-                '',
-              ].join('\r\n');
-
-              tlsSocket.write(httpRequest);
-              tlsSocket.write(body);
-            }
-          );
-
-          const chunks: Buffer[] = [];
-          tlsSocket.on('data', (chunk: Buffer) => chunks.push(chunk));
-
-          tlsSocket.on('end', () => {
-            if (settled) { return; }
-            settled = true;
-            const raw = Buffer.concat(chunks).toString();
-            this.processResponse(raw, resolve, reject);
-          });
-
-          tlsSocket.on('error', (err: Error) => {
-            if (settled) { return; }
-            settled = true;
-            reject(err);
-          });
-
-          tlsSocket.on('timeout', () => {
-            if (settled) { return; }
-            settled = true;
-            tlsSocket.destroy();
-            reject(new Error('TLS over proxy timed out'));
-          });
+        if (!connectResponse.includes('\r\n\r\n')) {
+          return;
         }
+
+        const statusLine = connectResponse.split('\r\n')[0];
+        if (!statusLine.includes('200')) {
+          proxySocket.destroy();
+          if (!settled) {
+            settled = true;
+            reject(new Error(`Proxy rejected CONNECT: ${statusLine}`));
+          }
+          return;
+        }
+
+        // Step 3: upgrade tunnel to TLS (https) or use raw TCP (http)
+        proxySocket.removeAllListeners('data');
+
+        const requestHead = this.buildRequestHead(endpoint, body, apiKey);
+
+        const onConnected = (socket: net.Socket) => {
+          socket.write(requestHead);
+          socket.write(body);
+        };
+
+        if (endpoint.protocol === 'http:') {
+          const socket = proxySocket;
+          onConnected(socket);
+          this.pipeResponse(socket, resolve, reject, () => settled, () => { settled = true; });
+          return;
+        }
+
+        const tlsSocket = tls.connect(
+          {
+            socket: proxySocket,
+            servername: targetHost,
+            rejectUnauthorized: false,
+            timeout: 15_000,
+          },
+          () => onConnected(tlsSocket)
+        );
+
+        this.pipeResponse(tlsSocket, resolve, reject, () => settled, () => { settled = true; });
       });
 
       proxySocket.on('error', (err: Error) => {
@@ -287,6 +355,38 @@ export class DeepSeekClient {
     });
   }
 
+  /** Attach end/error/timeout handlers that resolve/reject the request. */
+  private pipeResponse(
+    socket: net.Socket,
+    resolve: (value: string) => void,
+    reject: (err: Error) => void,
+    isSettled: () => boolean,
+    markSettled: () => void
+  ): void {
+    const chunks: Buffer[] = [];
+    socket.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    socket.on('end', () => {
+      if (isSettled()) { return; }
+      markSettled();
+      const raw = Buffer.concat(chunks).toString();
+      this.processResponse(raw, resolve, reject);
+    });
+
+    socket.on('error', (err: Error) => {
+      if (isSettled()) { return; }
+      markSettled();
+      reject(err);
+    });
+
+    socket.on('timeout', () => {
+      if (isSettled()) { return; }
+      markSettled();
+      socket.destroy();
+      reject(new Error('Connection timed out'));
+    });
+  }
+
   /**
    * Process raw HTTP response: extract body, sanitize, parse JSON.
    */
@@ -295,7 +395,7 @@ export class DeepSeekClient {
     resolve: (value: string) => void,
     reject: (err: Error) => void
   ): void {
-    console.log('[Python Hover Translator] TLS response received,', raw.length, 'bytes');
+    console.log('[Python Hover Translator] Response received,', raw.length, 'bytes');
 
     if (!raw) {
       reject(new Error('Empty response from API'));
@@ -312,9 +412,9 @@ export class DeepSeekClient {
 
       const cleanBody = this.sanitizeJson(body);
 
-      let data: DeepSeekResponse;
+      let data: ChatResponse;
       try {
-        data = JSON.parse(cleanBody) as DeepSeekResponse;
+        data = JSON.parse(cleanBody) as ChatResponse;
       } catch (parseErr) {
         console.error('[Python Hover Translator] JSON parse failed.');
         console.error('[Python Hover Translator] Body start:', cleanBody.slice(0, 300));
@@ -325,7 +425,9 @@ export class DeepSeekClient {
 
       const content = data.choices?.[0]?.message?.content;
       if (!content) {
-        reject(new Error('DeepSeek returned empty response body'));
+        // Surface API-level errors (e.g. invalid key/model) when present
+        const apiError = (data as unknown as { error?: { message?: string } }).error;
+        reject(new Error(apiError?.message || 'API returned empty response body'));
         return;
       }
 

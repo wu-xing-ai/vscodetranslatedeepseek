@@ -1,10 +1,19 @@
 {
   "name": "aitranslate",
-  "displayName": "AI Translate",
-  "description": "AI-powered Python hover documentation translation using DeepSeek API",
-  "version": "0.1.0",
+  "displayName": "AI Translate - Hover Docs",
+  "description": "AI-powered hover documentation translation for any language (Python, JS/TS, Go, Rust, Java, C++ ...) using any OpenAI-compatible API",
+  "version": "0.2.0",
   "publisher": "aitranslate",
+  "license": "MIT",
   "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wu-xing-ai/vscodetranslatedeepseek.git"
+  },
+  "homepage": "https://github.com/wu-xing-ai/vscodetranslatedeepseek#readme",
+  "bugs": {
+    "url": "https://github.com/wu-xing-ai/vscodetranslatedeepseek/issues"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -17,7 +26,7 @@
   ],
   "contributes": {
     "configuration": {
-      "title": "Python Hover Translator",
+      "title": "AI Hover Translator",
       "properties": {
         "pythonHoverTranslator.enabled": {
           "type": "boolean",
@@ -27,7 +36,12 @@
         "pythonHoverTranslator.apiKey": {
           "type": "string",
           "default": "",
-          "description": "DeepSeek API key (get one at https://platform.deepseek.com/api_keys)"
+          "description": "API key for the translation service (DeepSeek, OpenAI, or any OpenAI-compatible provider)"
+        },
+        "pythonHoverTranslator.apiUrl": {
+          "type": "string",
+          "default": "https://api.deepseek.com/v1/chat/completions",
+          "description": "Custom OpenAI-compatible chat completions endpoint URL. Examples: https://api.deepseek.com/v1/chat/completions, https://api.openai.com/v1/chat/completions, http://localhost:11434/v1/chat/completions"
         },
         "pythonHoverTranslator.targetLanguage": {
           "type": "string",
@@ -50,7 +64,14 @@
         "pythonHoverTranslator.model": {
           "type": "string",
           "default": "deepseek-chat",
-          "description": "DeepSeek model name (e.g. deepseek-chat, deepseek-reasoner)"
+          "description": "Model name to use (e.g. deepseek-chat, gpt-4o-mini, qwen2.5:7b)"
+        },
+        "pythonHoverTranslator.maxTokens": {
+          "type": "number",
+          "default": 1024,
+          "minimum": 64,
+          "maximum": 32768,
+          "description": "Max tokens for the API response. Some models cap this (e.g. GLM-4V-Flash max 1024)."
         },
         "pythonHoverTranslator.showOriginal": {
           "type": "boolean",
@@ -60,32 +81,33 @@
         "pythonHoverTranslator.showExamples": {
           "type": "boolean",
           "default": true,
-          "description": "Include Python usage examples in the translated hover"
+          "description": "Include code usage examples in the translated hover"
         },
         "pythonHoverTranslator.proxyUrl": {
           "type": "string",
           "default": "",
-          "description": "HTTP/HTTPS proxy URL for DeepSeek API (e.g. http://127.0.0.1:7890). Leave empty to use HTTPS_PROXY env var or direct connection."
+          "description": "HTTP/HTTPS proxy URL for the API (e.g. http://127.0.0.1:7890). Leave empty to use HTTPS_PROXY env var or direct connection."
         }
       }
     },
     "commands": [
       {
         "command": "pythonHoverTranslator.clearCache",
-        "title": "Python Hover Translator: Clear Translation Cache"
+        "title": "AI Hover Translator: Clear Translation Cache"
       },
       {
         "command": "pythonHoverTranslator.toggle",
-        "title": "Python Hover Translator: Toggle On/Off"
+        "title": "AI Hover Translator: Toggle On/Off"
       }
     ]
   },
   "main": "./dist/extension.js",
   "scripts": {
-    "vscode:prepublish": "bash build.sh",
+    "vscode:prepublish": "node -e \"console.log('Pre-built, skipping compile')\"",
     "compile": "bash build.sh",
     "watch": "bash build.sh --watch",
-    "package": "bash package.sh"
+    "package": "bash package.sh",
+    "publish": "bash publish.sh"
   },
   "devDependencies": {
     "@types/node": "^20.x",

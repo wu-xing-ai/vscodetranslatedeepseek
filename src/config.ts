@@ -6,9 +6,11 @@ const CONFIG_SECTION = 'pythonHoverTranslator';
 export interface ExtensionConfig {
   enabled: boolean;
   apiKey: string;
+  apiUrl: string;
   targetLanguage: string;
   cacheSize: number;
   model: string;
+  maxTokens: number;
   showOriginal: boolean;
   showExamples: boolean;
   proxyUrl: string;
@@ -20,9 +22,11 @@ export function getConfig(): ExtensionConfig {
   return {
     enabled: cfg.get<boolean>('enabled', true),
     apiKey: cfg.get<string>('apiKey', ''),
+    apiUrl: cfg.get<string>('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
     targetLanguage: cfg.get<string>('targetLanguage', 'Chinese (Simplified)'),
     cacheSize: cfg.get<number>('cacheSize', 200),
     model: cfg.get<string>('model', 'deepseek-chat'),
+    maxTokens: cfg.get<number>('maxTokens', 1024),
     showOriginal: cfg.get<boolean>('showOriginal', true),
     showExamples: cfg.get<boolean>('showExamples', true),
     proxyUrl: cfg.get<string>('proxyUrl', ''),

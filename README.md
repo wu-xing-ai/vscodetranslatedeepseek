@@ -1,8 +1,10 @@
 # AI Translate
 
-VSCode 插件，鼠标悬停到任意语言的函数/类/模块上时，自动调用 DeepSeek API 将英文文档翻译成中文，并附带使用示例。
+VSCode 插件，鼠标悬停到任意语言的函数/类/模块上时，自动调用 AI API 将英文文档翻译成中文，并附带使用示例。
 
 支持 **Python、TypeScript、JavaScript、Go、Rust、Java、C#、C++** 等所有有 hover 文档的语言。
+
+兼容**任意 OpenAI 格式的 API**：DeepSeek、OpenAI、OpenRouter、Ollama、LM Studio、通义千问等，可自定义 **模型名、URL 和 Key**。
 
 ## 效果预览
 
@@ -67,19 +69,69 @@ bash build.sh
 
 安装后在 VSCode 设置中搜索 `Python Hover Translator`（设置项前缀保持兼容），需要配置以下两项：
 
-### 必填：API Key
+### 必填：API Key 与 API URL
 
 | 配置项 | 默认值 | 说明 |
 |---|---|---|
-| `pythonHoverTranslator.apiKey` | (空) | 你的 DeepSeek API Key |
+| `pythonHoverTranslator.apiKey` | (空) | 你的 API Key |
+| `pythonHoverTranslator.apiUrl` | `https://api.deepseek.com/v1/chat/completions` | API 地址（OpenAI 兼容） |
+| `pythonHoverTranslator.model` | `deepseek-chat` | 模型名 |
 
 ```json
 {
-  "pythonHoverTranslator.apiKey": "sk-你的-deepseek-key"
+  "pythonHoverTranslator.apiKey": "sk-你的-key",
+  "pythonHoverTranslator.apiUrl": "https://api.deepseek.com/v1/chat/completions",
+  "pythonHoverTranslator.model": "deepseek-chat"
 }
 ```
 
-API Key 获取地址：https://platform.deepseek.com/api_keys
+DeepSeek Key 获取地址：https://platform.deepseek.com/api_keys
+
+#### 其他服务示例
+
+OpenAI：
+
+```json
+{
+  "pythonHoverTranslator.apiKey": "sk-...",
+  "pythonHoverTranslator.apiUrl": "https://api.openai.com/v1/chat/completions",
+  "pythonHoverTranslator.model": "gpt-4o-mini"
+}
+```
+
+本地 Ollama（无需 Key，可填任意非空字符串）：
+
+```json
+{
+  "pythonHoverTranslator.apiKey": "ollama",
+  "pythonHoverTranslator.apiUrl": "http://localhost:11434/v1/chat/completions",
+  "pythonHoverTranslator.model": "qwen2.5:7b"
+}
+```
+
+OpenRouter：
+
+```json
+{
+  "pythonHoverTranslator.apiKey": "sk-or-...",
+  "pythonHoverTranslator.apiUrl": "https://openrouter.ai/api/v1/chat/completions",
+  "pythonHoverTranslator.model": "deepseek/deepseek-chat"
+}
+```
+
+智谱 GLM（可填 base URL 或完整地址，插件会自动补 `/chat/completions`）：
+
+```json
+{
+  "pythonHoverTranslator.apiKey": "你的智谱-key",
+  "pythonHoverTranslator.apiUrl": "https://open.bigmodel.cn/api/paas/v4",
+  "pythonHoverTranslator.model": "glm-4-flash",
+  "pythonHoverTranslator.maxTokens": 1024
+}
+```
+
+> 注意：`GLM-4V-Flash` 是视觉模型，纯文本翻译时可能重复输出，建议用 `glm-4-flash`。
+> 某些模型对 `max_tokens` 有上限（如 `GLM-4V-Flash` 最大 1024），可用 `pythonHoverTranslator.maxTokens` 调整。
 
 ### 可选配置
 
@@ -87,10 +139,10 @@ API Key 获取地址：https://platform.deepseek.com/api_keys
 |---|---|---|
 | `pythonHoverTranslator.enabled` | `true` | 开关翻译 |
 | `pythonHoverTranslator.targetLanguage` | `Chinese (Simplified)` | 目标语言 |
-| `pythonHoverTranslator.model` | `deepseek-chat` | DeepSeek 模型 |
 | `pythonHoverTranslator.cacheSize` | `200` | 缓存条数（LRU 淘汰） |
 | `pythonHoverTranslator.showOriginal` | `true` | 显示原始英文 |
 | `pythonHoverTranslator.showExamples` | `true` | 附带代码示例 |
+| `pythonHoverTranslator.maxTokens` | `1024` | API 回复最大 token 数 |
 | `pythonHoverTranslator.proxyUrl` | (空) | 代理地址（国内用户可能需要） |
 
 ### 代理配置（国内用户）
@@ -118,8 +170,8 @@ WSL 用户注意：WSL2 中代理地址是宿主机 IP，例如 `http://172.27.2
 
 | 命令 | 说明 |
 |---|---|
-| `Python Hover Translator: Clear Translation Cache` | 清空翻译缓存 |
-| `Python Hover Translator: Toggle On/Off` | 开关翻译 |
+| `AI Hover Translator: Clear Translation Cache` | 清空翻译缓存 |
+| `AI Hover Translator: Toggle On/Off` | 开关翻译 |
 
 ## 工作原理
 
