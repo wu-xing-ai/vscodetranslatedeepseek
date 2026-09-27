@@ -2,7 +2,7 @@
   "name": "aitranslate",
   "displayName": "AI Translate - Hover Docs",
   "description": "AI-powered hover documentation translation for any language (Python, JS/TS, Go, Rust, Java, C++ ...) using any OpenAI-compatible API",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "publisher": "aitranslate",
   "license": "MIT",
   "icon": "icon.png",
@@ -36,7 +36,7 @@
         "pythonHoverTranslator.apiKey": {
           "type": "string",
           "default": "",
-          "description": "(Legacy) API key. Prefer the visual settings panel — the key is stored securely in the OS keychain instead. This plain-text setting is only used as a fallback."
+          "description": "(Legacy) Your own API key. Leave empty to use the built-in free quota (智谱 glm-4-flash). Prefer the visual settings panel, which stores the key securely and never syncs it to the cloud."
         },
         "pythonHoverTranslator.apiUrl": {
           "type": "string",

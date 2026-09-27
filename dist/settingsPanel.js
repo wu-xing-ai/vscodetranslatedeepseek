@@ -37,6 +37,7 @@ exports.SettingsPanel = void 0;
 const vscode = __importStar(require("vscode"));
 const deepseekClient_1 = require("./deepseekClient");
 const secrets_1 = require("./secrets");
+const builtin_1 = require("./builtin");
 const CONFIG_SECTION = 'pythonHoverTranslator';
 const PRESETS = [
     {
@@ -154,13 +155,27 @@ class SettingsPanel {
     async postState() {
         const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
         const key = (0, secrets_1.getApiKey)();
+        const usingBuiltin = (0, secrets_1.isUsingBuiltinKey)();
+        // When the shared free key is in use, show its fixed endpoint/model so the
+        // "Test connection" button and the displayed values match reality.
+        const effective = usingBuiltin
+            ? {
+                apiUrl: builtin_1.BUILTIN_API_URL,
+                model: builtin_1.BUILTIN_MODEL,
+                maxTokens: builtin_1.BUILTIN_MAX_TOKENS,
+            }
+            : {
+                apiUrl: cfg.get('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
+                model: cfg.get('model', 'deepseek-chat'),
+                maxTokens: cfg.get('maxTokens', 1024),
+            };
         await this.panel.webview.postMessage({
             type: 'state',
             payload: {
                 enabled: cfg.get('enabled', true),
-                apiUrl: cfg.get('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
-                model: cfg.get('model', 'deepseek-chat'),
-                maxTokens: cfg.get('maxTokens', 1024),
+                apiUrl: effective.apiUrl,
+                model: effective.model,
+                maxTokens: effective.maxTokens,
                 targetLanguage: cfg.get('targetLanguage', 'Chinese (Simplified)'),
                 showOriginal: cfg.get('showOriginal', true),
                 showExamples: cfg.get('showExamples', true),
@@ -168,6 +183,9 @@ class SettingsPanel {
                 // Never send the full key back; only whether it exists + a masked hint.
                 hasKey: !!key && key.trim().length > 0,
                 keyHint: SettingsPanel.maskKey(key),
+                usingBuiltin,
+                userKeyHint: SettingsPanel.maskKey((0, secrets_1.getUserApiKey)()),
+                builtinModel: builtin_1.BUILTIN_MODEL,
             },
         });
     }
@@ -474,7 +492,11 @@ class SettingsPanel {
     state = s;
     $('apiKey').value = '';
     $('apiKey').placeholder = s.hasKey ? '已保存（如需修改请重新输入）' : '粘贴你的 API Key';
-    $('keyHint').textContent = s.hasKey ? '当前：' + s.keyHint + '（安全存储于系统密钥库）' : '尚未配置 API Key';
+    if (s.usingBuiltin) {
+      $('keyHint').innerHTML = '✨ 正在使用<b>内置免费额度</b>（智谱 ' + s.builtinModel + '）—— 开箱即用，无需配置。如需其它模型请填写自己的 Key。';
+    } else {
+      $('keyHint').textContent = '当前：' + s.userKeyHint + '（安全存储于系统密钥库，不会上传云端）';
+    }
     $('apiUrl').value = s.apiUrl || '';
     $('model').value = s.model || '';
     $('maxTokens').value = s.maxTokens || 1024;

@@ -38,18 +38,27 @@ exports.isEnabled = isEnabled;
 exports.hasApiKey = hasApiKey;
 const vscode = __importStar(require("vscode"));
 const secrets_1 = require("./secrets");
+const builtin_1 = require("./builtin");
 const CONFIG_SECTION = 'pythonHoverTranslator';
 /** Read all configuration values at once. */
 function getConfig() {
     const cfg = vscode.workspace.getConfiguration(CONFIG_SECTION);
+    // When no user key is configured we fall back to the shared free key,
+    // which is only valid for the free 智谱 glm-4-flash model. In that case
+    // ignore the user's url/model/tokens so requests always succeed.
+    const usingBuiltin = (0, secrets_1.isUsingBuiltinKey)();
     return {
         enabled: cfg.get('enabled', true),
         apiKey: (0, secrets_1.getApiKey)(),
-        apiUrl: cfg.get('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
+        apiUrl: usingBuiltin
+            ? builtin_1.BUILTIN_API_URL
+            : cfg.get('apiUrl', 'https://api.deepseek.com/v1/chat/completions'),
         targetLanguage: cfg.get('targetLanguage', 'Chinese (Simplified)'),
         cacheSize: cfg.get('cacheSize', 200),
-        model: cfg.get('model', 'deepseek-chat'),
-        maxTokens: cfg.get('maxTokens', 1024),
+        model: usingBuiltin ? builtin_1.BUILTIN_MODEL : cfg.get('model', 'deepseek-chat'),
+        maxTokens: usingBuiltin
+            ? builtin_1.BUILTIN_MAX_TOKENS
+            : cfg.get('maxTokens', 1024),
         showOriginal: cfg.get('showOriginal', true),
         showExamples: cfg.get('showExamples', true),
         proxyUrl: cfg.get('proxyUrl', ''),

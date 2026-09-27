@@ -92,12 +92,13 @@ async function activate(context) {
             console.log(`[Python Hover Translator] Cache capacity updated to ${newSize}`);
         }
     }));
-    // First-run guidance: if no API key is configured, offer to open settings.
+    // First-run notice: tell the user they are using the shared free key and
+    // how to configure their own provider.
     const alreadyPrompted = context.globalState.get('hasPromptedForSetup');
-    if (!config.apiKey && !alreadyPrompted) {
+    if ((0, secrets_1.isUsingBuiltinKey)() && !alreadyPrompted) {
         await context.globalState.update('hasPromptedForSetup', true);
-        const action = await vscode.window.showInformationMessage('AI Translate: 还没有配置 API Key，现在设置？', '打开设置');
-        if (action === '打开设置') {
+        const action = await vscode.window.showInformationMessage('AI Translate 已启用：正在使用内置免费额度（智谱 glm-4-flash），无需配置即可翻译。', '配置自己的 Key');
+        if (action === '配置自己的 Key') {
             settingsPanel_1.SettingsPanel.createOrShow(context.extensionUri);
         }
     }

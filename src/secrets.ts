@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { BUILTIN_API_KEY } from './builtin';
 
 const SECRET_KEY = 'pythonHoverTranslator.apiKey';
 const CONFIG_SECTION = 'pythonHoverTranslator';
@@ -22,17 +23,33 @@ export async function initSecrets(context: vscode.ExtensionContext): Promise<voi
 }
 
 /**
- * Return the API key.
+ * Return the user's own API key, or an empty string if none is configured.
  * Prefers the securely stored secret; falls back to the legacy plain-text
  * `pythonHoverTranslator.apiKey` setting for backward compatibility.
  */
-export function getApiKey(): string {
+export function getUserApiKey(): string {
   if (cachedApiKey && cachedApiKey.trim().length > 0) {
     return cachedApiKey;
   }
   return vscode.workspace
     .getConfiguration(CONFIG_SECTION)
     .get<string>('apiKey', '');
+}
+
+/**
+ * Return the key actually used for requests.
+ * Falls back to the built-in shared free key when the user has none, so the
+ * extension works out-of-the-box without any configuration.
+ */
+export function getApiKey(): string {
+  const userKey = getUserApiKey();
+  return userKey && userKey.trim().length > 0 ? userKey : BUILTIN_API_KEY;
+}
+
+/** True when no user key is configured and the shared built-in key is used. */
+export function isUsingBuiltinKey(): boolean {
+  const userKey = getUserApiKey();
+  return !(userKey && userKey.trim().length > 0);
 }
 
 /** Persist the API key to secure storage (and mirror to memory). */
