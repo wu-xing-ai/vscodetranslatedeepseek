@@ -41,7 +41,7 @@ const CONFIG_SECTION = 'pythonHoverTranslator';
 const PRESETS = [
     {
         id: 'deepseek',
-        name: 'DeepSeek',
+        name: 'DeepSeek（推荐）',
         apiUrl: 'https://api.deepseek.com/v1/chat/completions',
         model: 'deepseek-flash',
         maxTokens: 2048,

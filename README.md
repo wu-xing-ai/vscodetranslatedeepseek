@@ -4,7 +4,7 @@ VSCode 插件，鼠标悬停到任意语言的函数/类/模块上时，自动�
 
 支持 **Python、TypeScript、JavaScript、Go、Rust、Java、C#、C++** 等所有有 hover 文档的语言。
 
-兼容**任意 OpenAI 格式的 API**：DeepSeek、OpenAI、OpenRouter、Ollama、LM Studio、通义千问等，可自定义 **模型名、URL 和 Key**。
+兼容**任意 OpenAI 格式的 API**：**DeepSeek（推荐）**、OpenAI、OpenRouter、Ollama、LM Studio、通义千问等，可自定义 **模型名、URL 和 Key**。
 
 ---
 
@@ -18,7 +18,10 @@ AI Hover Translator: Open Settings
 
 在可视化面板里：选服务商 → 粘贴 Key → **测试连接** → 保存。
 
-> 💡 没有 Key？选 **智谱 GLM**，`glm-4-flash` 模型**免费**，注册即可获取 Key。
+> ✅ **推荐 DeepSeek**（`deepseek-chat`）：翻译质量最好，术语准确，性价比高。
+> 注册领取免费额度：https://platform.deepseek.com/api_keys
+>
+> 💡 想零成本试用？也可选 **智谱 GLM**，`glm-4-flash` 模型免费，注册即可获取 Key。
 
 ---
 
@@ -57,10 +60,10 @@ torch.arange(0, 10, 2)  # tensor([0, 2, 4, 6, 8])
 
 ### 方式一：安装 .vsix 包（推荐）
 
-从 [GitHub Releases](https://github.com/wu-xing-ai/vscodetranslatedeepseek/releases) 下载 `aitranslate-0.1.0.vsix`，然后：
+从 [GitHub Releases](https://github.com/wu-xing-ai/vscodetranslatedeepseek/releases) 下载 `ai-hover-translate-0.4.1.vsix`，然后：
 
 ```bash
-code --install-extension aitranslate-0.1.0.vsix
+code --install-extension ai-hover-translate-0.4.1.vsix
 ```
 
 或者在 VSCode 中：`Ctrl+Shift+P` → `Extensions: Install from VSIX...` → 选择文件。
@@ -91,18 +94,27 @@ AI Hover Translator: Open Settings
 
 打开可视化面板，一键完成配置：
 
-1. **选择服务商** — DeepSeek / 智谱 GLM（免费）/ OpenAI / OpenRouter / Ollama / 自定义，点一下自动填好地址和模型
+1. **选择服务商** — **DeepSeek（推荐）** / 智谱 GLM（免费）/ OpenAI / OpenRouter / Ollama / 自定义，点一下自动填好地址和模型
 2. **粘贴 API Key** — 点「显示」可查看，点「清除」可删除
 3. **点「测试连接」** — 立即验证 Key、地址、模型是否正确，不用等悬停
 4. **点「保存设置」** — 完成
 
 > 🔒 API Key 保存在操作系统密钥库（VS Code SecretStorage），**不会明文写入 `settings.json`，也不会上传到设置同步云端**。
 
-### 没有 Key？推荐免费的智谱 GLM
+### 推荐：DeepSeek（效果最好）
 
-- 在面板里点 **智谱 GLM（免费）** → 点「获取 Key」链接去注册（免费）
-- 模型保持 `glm-4-flash`，粘贴 Key → 测试连接 → 保存
-- 也可用 DeepSeek / OpenAI / 本地 Ollama 等任意 OpenAI 兼容服务
+- 在面板里点 **DeepSeek** → 点「获取 Key」去注册领免费额度
+- 模型保持 `deepseek-chat`，粘贴 Key → 测试连接 → 保存
+- 翻译质量最好、术语准确，日常使用强烈推荐
+
+### 备选：免费的智谱 GLM
+
+- 想零成本试用就点 **智谱 GLM（免费）**，模型用 `glm-4-flash`（免费）
+- 效果不如 DeepSeek，但够用且不要钱
+
+### 其他
+
+- 也可用 OpenAI / OpenRouter / 本地 Ollama 等任意 OpenAI 兼容服务
 
 ## 配置（手动 / settings.json）
 
@@ -252,7 +264,7 @@ cd vscodetranslatedeepseek
 npm install
 bash build.sh
 bash package.sh
-# 生成 aitranslate-0.1.0.vsix
+# 生成 ai-hover-translate-0.4.1.vsix
 ```
 
 ## 项目结构
